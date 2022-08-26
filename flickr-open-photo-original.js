@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name     Flickr Auto-Download
 // @version  1
 // @grant    none
@@ -9,69 +9,30 @@
 
 this.$ = this.jQuery = jQuery.noConflict(true);
 
-$(document).ready(function () {
+$(document).ready(() => {
 
-    console.log("test");
+	setTimeout(() => {
 
-    setTimeout(function () {
+		if (/^https?:\/\/www\.flickr\.com\/photos\/([^\/]+)\/(\d+)\//.test(window.location.href)) {
 
-        var url = window.location.href;
+			var htmlText = document.documentElement.innerHTML;
 
-        if (/^https?:\/\/www\.flickr\.com\/photos\/([^\/]+)\/(\d+)\//.test(url)) {
+			var match = htmlText.match(/\.ClientApp\.init\(\{(.|\n)*?modelExport:((.|\n)*?)\,(\n|\s)*?auth/);
 
-            var htmlText = document.documentElement.innerHTML;
+			var modelExportVm = JSON.parse(match[2]);
 
-            var match = htmlText.match(/\.ClientApp\.init\(\{(.|\n)*?modelExport:((.|\n)*?)\,(\n|\s)*?auth/);
+			var sizesObject = modelExportVm?.main?.["photo-models"]?.[0]?.sizes;
 
-            var modelExportVm = JSON.parse(match[2]);
+			console.log(sizesObject);
 
-            if (!modelExportVm) {
-                return;
-            }
+			var urlsOrderedBySize = Object.getOwnPropertyNames(sizesObject)
+				.map(n => sizesObject[n])
+				.sort((p1, p2) => p1.width * p1.height > p2.width * p2.height ? -1 : 1)
+				.map(p => p.url);
 
-            var mainVm = modelExportVm.main;
+			window.open(urlsOrderedBySize[0], "_self");
+		}
 
-            if (!mainVm) {
-                return;
-            }
-
-            var photoModelsVm = mainVm["photo-models"];
-
-            if (!photoModelsVm) {
-                return;
-            }
-
-            if (photoModelsVm.length !== 1) {
-                return;
-            }
-
-            var firstPhotoVm = photoModelsVm[0];
-
-            if (!firstPhotoVm) {
-                return;
-            }
-
-            var sizes = firstPhotoVm.sizes;
-
-            if (!sizes) {
-                return;
-            }
-
-            var original = sizes.o;
-
-            if (!original) {
-                return;
-            }
-
-            var downloadUrl = original.url;
-
-            if (!downloadUrl) {
-                return;
-            }
-
-            window.open(downloadUrl, "_self");
-        }
-
-    }, 1000);
+	}, 3000);
 
 });
